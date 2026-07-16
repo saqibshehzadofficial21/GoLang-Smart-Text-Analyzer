@@ -1,0 +1,13 @@
+
+
+
+
+*.exe
+
+
+# Output
+*.out
+
+# IDE
+.vscode/
+.idea/
