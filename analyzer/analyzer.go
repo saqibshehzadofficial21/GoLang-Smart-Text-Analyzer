@@ -1,25 +1,32 @@
 package analyzer
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Result struct {
-	TotalChars       int
-	TotalWords       int
-	TotalLetters     int
-	Vowels           int
-	Consonants       int
-	Uppercase        int
-	Lowercase        int
-	CharsWithSpace   int
+	TotalChars        int
+	TotalWords        int
+	TotalLetters      int
+	Vowels            int
+	Consonants        int
+	Uppercase         int
+	Lowercase         int
+	CharsWithSpace    int
 	CharsWithoutSpace int
-	Punctuations     int
-	Integers         int
-	Sentences        int
-	Lines            int
-	Spaces           int
+	Punctuations      int
+	Integers          int
+	Sentences         int
+	Lines             int
+	Spaces            int
+	ExecutionTime     time.Duration
 }
 
 func Analyze(text string) Result {
+
+	startTime := time.Now()
+
 	var r Result
 
 	inWord := false
@@ -27,8 +34,8 @@ func Analyze(text string) Result {
 
 	for _, char := range text {
 
-		r.CharsWithSpace++
 		r.TotalChars++
+		r.CharsWithSpace++
 
 		if char == ' ' || char == '\t' {
 			r.Spaces++
@@ -39,54 +46,36 @@ func Analyze(text string) Result {
 		}
 
 		// Word Count
-		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') {
-			if !inWord {
-				r.TotalWords++
-				inWord = true
-			}
-		} else {
-			inWord = false
-		}
+		r.TotalWords += getWordCount(char, &inWord)
 
-		// Letters & Case
-		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') {
+		// Letters, Vowels, Consonants, Case
+		if isLetter(char) {
 			r.TotalLetters++
 
-			if char == 'a' || char == 'e' || char == 'i' || char == 'o' || char == 'u' ||
-			   char == 'A' || char == 'E' || char == 'I' || char == 'O' || char == 'U' {
+			if isVowel(char) {
 				r.Vowels++
 			} else {
 				r.Consonants++
 			}
 
-			if char >= 'A' && char <= 'Z' {
+			if isUpper(char) {
 				r.Uppercase++
 			} else {
 				r.Lowercase++
 			}
 		}
 
-		// Punctuation
+		// Other Counts
 		if isPunctuation(char) {
 			r.Punctuations++
 		}
 
-		// Numbers
-		if char >= '0' && char <= '9' {
+		if isDigit(char) {
 			r.Integers++
 		}
 
-		// Sentences
-		if char == '.' || char == '!' || char == '?' {
-			if inSentence {
-				r.Sentences++
-				inSentence = false
-			}
-		} else if char != ' ' && char != '\n' && char != '\t' {
-			inSentence = true
-		}
+		r.Sentences += getSentenceCount(char, &inSentence)
 
-		// Lines
 		if char == '\n' {
 			r.Lines++
 		}
@@ -96,7 +85,28 @@ func Analyze(text string) Result {
 		r.Lines++
 	}
 
+	r.ExecutionTime = time.Since(startTime) // Time end 
+
 	return r
+}
+
+// Simple Helper Functions
+
+func isLetter(char rune) bool {
+	return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
+}
+
+func isDigit(char rune) bool {
+	return char >= '0' && char <= '9'
+}
+
+func isUpper(char rune) bool {
+	return char >= 'A' && char <= 'Z'
+}
+
+func isVowel(char rune) bool {
+	return char == 'a' || char == 'e' || char == 'i' || char == 'o' || char == 'u' ||
+		char == 'A' || char == 'E' || char == 'I' || char == 'O' || char == 'U'
 }
 
 func isPunctuation(char rune) bool {
@@ -108,6 +118,35 @@ func isPunctuation(char rune) bool {
 	}
 	return false
 }
+
+func getWordCount(char rune, inWord *bool) int {
+	if isLetter(char) || isDigit(char) {
+		if !*inWord {
+			*inWord = true
+			return 1
+		}
+		return 0
+	}
+	*inWord = false
+	return 0
+}
+
+func getSentenceCount(char rune, inSentence *bool) int {
+	if char == '.' || char == '!' || char == '?' {
+		if *inSentence {
+			*inSentence = false
+			return 1
+		}
+	} else if !isSpace(char) {
+		*inSentence = true
+	}
+	return 0
+}
+
+func isSpace(char rune) bool {
+	return char == ' ' || char == '\t' || char == '\n'
+}
+
 
 func PrintResult(r Result) {
 	fmt.Printf("\n \n TEXT ANYLIZER... \n\n")
@@ -126,4 +165,5 @@ func PrintResult(r Result) {
 	fmt.Printf("13 -Sentences : %d\n", r.Sentences)
 	fmt.Printf("14 -Total Lines : %d\n", r.Lines)
 	fmt.Printf("15 -Total Spaces : %d\n", r.Spaces)
+	fmt.Printf("16 -Execution Time : %v\n", r.ExecutionTime)
 }
